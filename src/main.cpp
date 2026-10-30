@@ -1,5 +1,5 @@
 // ============================================================================
-//  Predictive Input Buffer v2.0.0  (Windows, Geode 5.11.2, GD 2.2081)
+//  Predictive Input Buffer v2.1.0  (Windows / Android, Geode 5.11.2, GD 2.2081)
 //
 //  v1 trajectory buffer (lilWC) + ideas from Lyophi's "Input Buffer" (MacOS)
 //  + new modes: Hybrid, Debounce, lethal input filter, presets, auto TPS,
@@ -102,6 +102,17 @@ static void bindKey(char const* key, F action) {
     });
 }
 
+// All hotkey actions are exposed through this table so the on-screen buttons
+// (used on phones, where there is no F-row) run exactly the same code.
+namespace pbuf::overlay::hotkeys {
+    void toggle() { hotkeyToggle(); }
+    void cycleWindow() { hotkeyCycleWindow(); }
+    void cycleStrategy() { hotkeyCycleStrategy(); }
+    void cyclePreset() { hotkeyCyclePreset(); }
+    void overlay() { hotkeyOverlay(); }
+    void debug() { hotkeyDebug(); }
+}
+
 $on_mod(Loaded) {
     loadConfig();
 
@@ -117,7 +128,7 @@ $on_mod(Loaded) {
     bindKey("key-overlay", hotkeyOverlay);
     bindKey("key-debug", hotkeyDebug);
 
-    log::info("[InputBuffer] v2.0.0 loaded. Preset: {}, main window: {} ticks",
+    log::info("[InputBuffer] v2.1.0 loaded. Preset: {}, main window: {} ticks",
               presetName(cfg().preset), cfg().mainWindow);
 }
 
@@ -315,6 +326,62 @@ class $modify(BufBaseGameLayer, GJBaseGameLayer) {
 //  Pause menu shortcut to the settings
 // ---------------------------------------------------------------------------
 
+// One tappable row of quick actions. Phones have no F-row, so the keybinds are
+// mirrored here; each button runs the same action and closes the pause menu.
+class BufTouchBar : public cocos2d::CCNode {
+public:
+    static BufTouchBar* create() {
+        auto ret = new BufTouchBar();
+        if (ret && ret->init()) {
+            ret->autorelease();
+            return ret;
+        }
+        CC_SAFE_DELETE(ret);
+        return nullptr;
+    }
+
+    bool init() {
+        if (!CCNode::init()) return false;
+
+        auto menu = CCMenu::create();
+        menu->setID("buffer-touch-bar"_spr);
+        this->addChild(menu);
+
+        addButton(menu, "BUF", menu_selector(BufTouchBar::onToggle));
+        addButton(menu, "WIN", menu_selector(BufTouchBar::onWindow));
+        addButton(menu, "STRAT", menu_selector(BufTouchBar::onStrategy));
+        addButton(menu, "PRESET", menu_selector(BufTouchBar::onPreset));
+        addButton(menu, "UI", menu_selector(BufTouchBar::onOverlay));
+        addButton(menu, "LOG", menu_selector(BufTouchBar::onDebug));
+
+        menu->setLayout(RowLayout::create()->setGap(8.f)->setAxisAlignment(AxisAlignment::Center));
+        menu->updateLayout();
+        return true;
+    }
+
+    void addButton(CCMenu* menu, char const* text, cocos2d::SEL_MenuHandler selector) {
+        auto label = CCLabelBMFont::create(text, "bigFont.fnt");
+        label->setScale(0.55f);
+        auto spr = CircleButtonSprite::create(label, CircleBaseColor::DarkPurple, CircleBaseSize::Small);
+        auto btn = CCMenuItemSpriteExtra::create(spr, this, selector);
+        btn->setID(fmt::format("buffer-touch-{}", text));
+        menu->addChild(btn);
+    }
+
+    void closeMenu() {
+        if (auto pause = typeinfo_cast<PauseLayer*>(this->getParent())) {
+            pause->onResume(nullptr);
+        }
+    }
+
+    void onToggle(CCObject*) { pbuf::overlay::hotkeys::toggle(); closeMenu(); }
+    void onWindow(CCObject*) { pbuf::overlay::hotkeys::cycleWindow(); closeMenu(); }
+    void onStrategy(CCObject*) { pbuf::overlay::hotkeys::cycleStrategy(); closeMenu(); }
+    void onPreset(CCObject*) { pbuf::overlay::hotkeys::cyclePreset(); closeMenu(); }
+    void onOverlay(CCObject*) { pbuf::overlay::hotkeys::overlay(); closeMenu(); }
+    void onDebug(CCObject*) { pbuf::overlay::hotkeys::debug(); closeMenu(); }
+};
+
 class $modify(BufPauseLayer, PauseLayer) {
     void customSetup() {
         PauseLayer::customSetup();
@@ -335,6 +402,17 @@ class $modify(BufPauseLayer, PauseLayer) {
             auto win = CCDirector::get()->getWinSize();
             own->setPosition({win.width - 45.f, 22.f});
             this->addChild(own);
+        }
+
+        // Quick actions: on phones there is no keyboard, and even on desktop this
+        // is a fast alternative to the F-row. Hidden with the "touch-buttons" setting.
+        if (cfg().touchButtons) {
+            if (auto bar = BufTouchBar::create()) {
+                auto win = CCDirector::get()->getWinSize();
+                bar->setPosition({win.width / 2.f, 34.f});
+                bar->setZOrder(10);
+                this->addChild(bar);
+            }
         }
     }
 

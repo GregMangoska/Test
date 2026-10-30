@@ -1,0 +1,5 @@
+build/
+build-android32/
+build-android64/
+*.geode
+!dist/*.geode

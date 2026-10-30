@@ -65,6 +65,7 @@ struct Config {
     int overlayOpacity = 200;
     bool overlayFlash = true;
     bool notifyHotkeys = true;
+    bool touchButtons = true;  // pause-menu quick action buttons (phones)
 
     // Debug
     bool console = false;
@@ -92,7 +93,7 @@ std::string windowSettingKey(GM gm);
 Strat stratFor(GM gm);
 int windowTicksFor(GM gm); // 0 = off
 
-// Logging helpers (Geode log + optional live console)
+// Logging helpers (Geode log + optional live console on Windows only)
 void ensureConsole();
 void out(std::string const& line);       // always (if logSaves)
 void dbg(std::string const& line);       // only with debug

@@ -16,6 +16,8 @@ Makes tight timings easier by fixing clicks that are a tiny bit **too early**, *
 
 Plus: presets, auto TPS detection, spam guard, optional lethal input filter, 2-player support, on-screen overlay and rebindable keybinds.
 
+Runs on **Windows, Android 64-bit and Android 32-bit** (GD 2.2081, Geode 5.11.2).
+
 ## Keybinds (in a level)
 
 - **F6** cycle the main window (2 / 4 / 8 / 16 ticks / Off)
@@ -24,7 +26,8 @@ Plus: presets, auto TPS detection, spam guard, optional lethal input filter, 2-p
 - **F9** debug logging
 - **F10** cycle the strategy of the current gamemode
 
-The **BUF** button on the pause menu opens the settings.
+The **BUF** button on the pause menu opens the settings. On Android (no keyboard) the pause menu also
+shows a row of tappable buttons: **BUF**, **WIN**, **STRAT**, **PRESET**, **UI**, **LOG**.
 
 ## Note
 

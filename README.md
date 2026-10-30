@@ -1,6 +1,6 @@
 # Predictive Input Buffer v2
 
-Geode mod for **Geometry Dash 2.2081 (Windows)**, Geode **5.11.2**.
+Geode mod for **Geometry Dash 2.2081 (Windows, Android 64-bit and Android 32-bit)**, Geode **5.11.2**.
 
 Fixes clicks that are a tiny bit too early, too short, or that would kill you, with a strategy you choose for each gamemode.
 Doesn't matter if Click Between Frames is on.
@@ -48,7 +48,7 @@ A preset replaces the strategy of every gamemode (windows still come from the se
 - Overlay: gamemode, strategy, window, TPS, inputs saved this attempt / session, flashes cyan on every save.
 - Logs: `*** SAVED +N TICKS ... ***` in the Geode log, optional v1 live console window, debug logging.
 
-## Keybinds (only in a level, rebindable)
+## Keybinds and on-screen buttons
 
 | Default | Action |
 |---|---|
@@ -59,6 +59,23 @@ A preset replaces the strategy of every gamemode (windows still come from the se
 | F10 | cycle the strategy of the current gamemode (Custom preset) |
 | (none) | cycle preset |
 
+Keybinds only fire when a keyboard is present. On Android, open the pause menu and use the
+on-screen row of buttons: **BUF** (toggle), **WIN** (main window), **STRAT** (current gamemode's
+strategy), **PRESET**, **UI** (overlay) and **LOG** (debug logging). They run the same actions as
+the keybinds and close the pause menu afterwards. Turn the row off with the **On-screen Quick
+Buttons** setting. Settings are also reachable from the pause menu **BUF** circle button.
+
+## Android notes
+
+- Supported ABIs: `android64` (arm64-v8a) and `android32` (armeabi-v7a). Both target GD 2.2081.
+- The **Live Console Window** is a Win32 feature. On Android it does nothing; saved inputs
+  (`*** SAVED +N TICKS ... ***`) and debug lines go to the Geode log instead, which you can read in
+  the Geode launcher's log viewer or with `adb logcat`.
+- The TPS auto-detect follows the device frame time, so it adapts to whatever refresh rate your
+  phone is running at. If your device reports odd frame times, set **TPS** by hand.
+- The overlay label uses `chatFont.fnt` and scales with the screen; move it with
+  **Overlay Position** / **Overlay Scale** if it overlaps the pause or jump buttons.
+
 ## How it works
 
 - `GJBaseGameLayer::handleButton` (jump button only) -> `Engine::onInput` decides: pass now, queue for a later step, remember until landing, or ignore.
@@ -68,11 +85,36 @@ A preset replaces the strategy of every gamemode (windows still come from the se
 
 ## Building
 
-Geode SDK 5.11.2 + Geode CLI, CMake, Visual Studio 2022+ (Desktop C++) or clang-cl.
+Geode SDK 5.11.2 + Geode CLI and CMake.
 
 ```
+# Windows (Visual Studio 2022+ Desktop C++ or clang-cl)
 geode build
+
+# Android (NDK r29+, ANDROID_NDK_ROOT set)
+geode sdk install-binaries -p android64
+geode build -p android64
+
+# or, for 32-bit phones
+geode sdk install-binaries -p android32
+geode build -p android32
 ```
+
+The `.geode` package lands in `build-android64/` (or `build-android32/`). Copy it to the phone at
+`/storage/emulated/0/Android/media/com.geode.launcher/game/geode/mods/` and restart GD.
+
+**Toolchain notes** (learned from a working build):
+
+- Use **NDK r29** or newer. NDK r27/r28 ship Clang 18/19, and Android's libc++ there has **no
+  `std::atomic_ref`**, which Geode's `arc` dependency needs; r29 (Clang 21) has it. Geode 5.11.2 also
+  rejects Clang < 19.
+- `mod.json` must use a single `"android"` key under `gd`, not `android64`/`android32`; the build
+  looks for exactly `gd.android`.
+- Building outside the CLI needs `-DGEODE_TARGET_PLATFORM=Android64`, `-DGEODE_CLI=<path to geode>`,
+  the NDK's `android.toolchain.cmake`, `-DANDROID_ABI=arm64-v8a`, `-DANDROID_PLATFORM=android-24`,
+  and the loader binary at `$GEODE_SDK/bin/5.11.2/Geode.android64.so`.
+
+CI builds all three targets (`.github/workflows/build.yml`) and uploads one artifact per target.
 
 ## Credits
 

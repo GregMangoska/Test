@@ -1,9 +1,10 @@
 {
     "geode": "5.11.2",
     "gd": {
-        "win": "2.2081"
+        "win": "2.2081",
+        "android": "2.2081"
     },
-    "version": "v2.0.0",
+    "version": "v2.1.0",
     "id": "mifu.predictivebuffer",
     "name": "Predictive Input Buffer",
 	"developers": [
@@ -517,7 +518,7 @@
         "sec-keys": {
             "type": "title",
             "name": "Keybinds",
-            "description": "Only active while playing a level. Rebind them here or in Geode's keybind menu."
+            "description": "Only active while playing a level with a keyboard. Rebind them here or in Geode's keybind menu. On phones use the on-screen buttons in the pause menu instead."
         },
         "key-toggle": {
             "type": "keybind",
@@ -573,9 +574,15 @@
         },
         "console": {
             "type": "bool",
-            "name": "Live Console Window",
-            "description": "Opens the v1 live console window (Windows console) showing saved inputs as they happen.",
+            "name": "Live Console Window (Windows only)",
+            "description": "Opens the v1 live console window (Windows console) showing saved inputs as they happen. On Android, iOS and macOS this setting does nothing; saved inputs go to the Geode log instead.",
             "default": false
+        },
+        "touch-buttons": {
+            "type": "bool",
+            "name": "On-screen Quick Buttons",
+            "description": "Shows tappable BUF / WIN / STRAT / PRESET / UI / LOG buttons in the pause menu. They do the same thing as the keybinds, for phones without a keyboard.",
+            "default": true
         },
         "debug": {
             "type": "bool",

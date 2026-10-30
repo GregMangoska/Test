@@ -7,18 +7,35 @@ on:
 
 jobs:
   build:
-    name: Windows
-    runs-on: windows-latest
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            target: Win64
+          - name: Android64
+            os: ubuntu-latest
+            target: Android64
+          - name: Android32
+            os: ubuntu-latest
+            target: Android32
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - uses: geode-sdk/build-geode-mod@main
+        id: build
+        with:
+          target: ${{ matrix.target }}
 
       - name: Upload .geode
         uses: actions/upload-artifact@v4
         with:
-          name: output-windows
-          path: output/*.geode
+          name: output-${{ matrix.target }}
+          path: ${{ steps.build.outputs.build-output }}/*.geode
           if-no-files-found: error

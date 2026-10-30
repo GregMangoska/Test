@@ -1,7 +1,10 @@
 #include "Config.hpp"
 
-#include <Windows.h>
 #include <cstdio>
+
+#ifdef GEODE_IS_WINDOWS
+# include <Windows.h>
+#endif
 
 using namespace geode::prelude;
 
@@ -185,8 +188,14 @@ void loadConfig() {
     c.overlayOpacity = getI("overlay-opacity");
     c.overlayFlash = getB("overlay-flash");
     c.notifyHotkeys = getB("notify-hotkeys");
+    c.touchButtons = getB("touch-buttons");
 
     c.console = getB("console");
+#ifndef GEODE_IS_WINDOWS
+    // The live console window is a Win32 feature; hide the stale value so the
+    // rest of the code never tries to use it on phones.
+    c.console = false;
+#endif
     c.debug = getB("debug");
     c.logSaves = getB("log-saves");
 
@@ -199,34 +208,47 @@ void loadConfig() {
 
 static bool s_consoleReady = false;
 
+// The live console only exists on desktop Windows. On every other platform
+// (Android, iOS, macOS) it is a no-op and output goes to the Geode log, which
+// is readable from the Geode launcher's log viewer / logcat.
 void ensureConsole() {
-    if (s_consoleReady) return;
+#ifdef GEODE_IS_WINDOWS
+    if (!s_consoleReady) {
+        s_consoleReady = true;
+        if (!GetConsoleWindow()) AllocConsole();
+        FILE* f = nullptr;
+        (void)freopen_s(&f, "CONOUT$", "w", stdout);
+        SetConsoleTitleA("Predictive Input Buffer v2 - Live Console");
+        std::printf("============================================================\n");
+        std::printf(" [InputBuffer] v2.1.0 live console\n");
+        std::printf("============================================================\n");
+    }
     s_consoleReady = true;
-    if (!GetConsoleWindow()) AllocConsole();
-    FILE* f = nullptr;
-    freopen_s(&f, "CONOUT$", "w", stdout);
-    SetConsoleTitleA("Predictive Input Buffer v2 - Live Console");
-    std::printf("============================================================\n");
-    std::printf(" [InputBuffer] v2.0.0 live console\n");
-    std::printf("============================================================\n");
+#else
+    log::info("[InputBuffer] live console is unavailable on this platform, using the Geode log");
+#endif
 }
 
 void out(std::string const& line) {
     if (!s_cfg.logSaves) return;
     log::info("{}", line);
+#ifdef GEODE_IS_WINDOWS
     if (s_consoleReady && s_cfg.console) {
         std::printf("[InputBuffer] %s\n", line.c_str());
         std::fflush(stdout);
     }
+#endif
 }
 
 void dbg(std::string const& line) {
     if (!s_cfg.debug) return;
     log::info("[debug] {}", line);
+#ifdef GEODE_IS_WINDOWS
     if (s_consoleReady && s_cfg.console) {
         std::printf("[InputBuffer:dbg] %s\n", line.c_str());
         std::fflush(stdout);
     }
+#endif
 }
 
 } // namespace pbuf
